@@ -1,0 +1,426 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Drive or Ride SF</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: one phone-width column; sticky verdict bar on top, collapsible input sections below */
+:root{
+  --bg:#f3f5f6; --card:#ffffff; --fg:#14232b; --muted:#5b6b73; --line:#d9e0e3;
+  --own:#c2410c; --lease:#1d6fa5; --ride:#2f7d4f; --accent:#c2410c;
+  --display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
+  --body:"IBM Plex Sans",ui-sans-serif,system-ui,-apple-system,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f171b; --card:#172228; --fg:#e7eef1; --muted:#93a4ac; --line:#2a3a42;
+  --own:#f08a4b; --lease:#5fb0e6; --ride:#6cc58f; --accent:#f08a4b; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f171b; --card:#172228; --fg:#e7eef1; --muted:#93a4ac; --line:#2a3a42;
+  --own:#f08a4b; --lease:#5fb0e6; --ride:#6cc58f; --accent:#f08a4b; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.45}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--card)}
+.wrap{max-width:640px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:12px 40px}
+h1{font-family:var(--display);font-weight:800;font-size:1.9rem;line-height:1.05;margin:8px 0 4px;text-wrap:balance}
+.sub{color:var(--muted);margin:0 0 14px;font-size:.92rem}
+.verdict{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:14px;box-shadow:0 4px 16px rgba(0,0,0,.06)}
+.vhead{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:.78rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.bars{display:grid;gap:8px;margin-top:8px}
+.bar{display:grid;grid-template-columns:62px 1fr 92px;align-items:center;gap:8px;font-variant-numeric:tabular-nums}
+.bar .lab{font-weight:600}
+.track{height:12px;background:var(--line);border-radius:6px;overflow:hidden}
+.fill{height:100%;border-radius:6px;transition:width .25s}
+.bar .val{text-align:right;font-weight:600}
+.best .lab::after{content:" ✓";color:var(--ride)}
+.win{margin-top:8px;font-size:.9rem}
+.explain{border-top:1px solid var(--line);padding-top:10px;font-size:.9rem;display:grid;gap:8px}
+.explain h3{font-family:var(--display);font-weight:600;font-size:1.05rem;margin:0}
+.explain p,.explain ul{margin:0}
+.explain ul{padding-left:18px;display:grid;gap:6px}
+.example{background:var(--bg);border-radius:8px;padding:10px;font-variant-numeric:tabular-nums}
+.taxtoggle{display:flex;align-items:center;gap:10px;margin-top:8px;padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:var(--bg);font-weight:600;cursor:pointer;user-select:none}
+.taxtoggle input{width:22px;height:22px;margin:0;accent-color:var(--ride);flex:none}
+.win b{font-family:var(--display);font-size:1.05rem}
+details{background:var(--card);border:1px solid var(--line);border-radius:12px;margin-bottom:10px}
+summary{cursor:pointer;padding:12px 14px;font-family:var(--display);font-weight:600;font-size:1.08rem;list-style:none;display:flex;justify-content:space-between;align-items:center}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";color:var(--muted);font-size:1.3rem}
+details[open] summary::after{content:"–"}
+summary .dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:8px}
+.body{padding:0 14px 14px;display:grid;gap:10px}
+.row{display:grid;grid-template-columns:1fr 118px;gap:10px;align-items:center}
+.row label{font-size:.9rem;min-width:0}
+.row small{display:block;color:var(--muted);font-size:.76rem}
+input{width:100%;font:inherit;font-size:16px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg);text-align:right;font-variant-numeric:tabular-nums}
+input:focus{outline:2px solid var(--accent);outline-offset:1px}
+.note{font-size:.8rem;color:var(--muted);margin:0}
+.tblwrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.86rem;font-variant-numeric:tabular-nums}
+th,td{padding:5px 4px;text-align:left}
+th{font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600}
+td input{padding:6px;min-width:58px}
+.out{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.out div{background:var(--bg);border-radius:8px;padding:8px;font-variant-numeric:tabular-nums}
+.out span{display:block;font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.out b{font-size:1rem}
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+button{font:inherit;font-weight:600;padding:9px 14px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--fg);cursor:pointer}
+button:focus-visible{outline:2px solid var(--accent)}
+.foot{font-size:.78rem;color:var(--muted);margin-top:14px}
+@media (prefers-reduced-motion:reduce){.fill{transition:none}}
+.err{color:#c62828;font-size:.78rem;grid-column:1/-1;margin-top:-4px}
+input.bad{border-color:#c62828;outline:1px solid #c62828}
+select{font:inherit;font-size:16px;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg);width:100%}
+.chk{display:flex;align-items:center;gap:10px;font-size:.9rem}
+.chk input{width:20px;height:20px;flex:none;margin:0}
+.explain{border-top:1px solid var(--line);padding-top:10px;font-size:.9rem;display:grid;gap:8px}
+.explain h3{font-family:var(--display);font-weight:600;font-size:1.05rem;margin:0}
+.explain p,.explain ul{margin:0}
+.explain ul{padding-left:18px;display:grid;gap:6px}
+.example{background:var(--bg);border-radius:8px;padding:10px;font-variant-numeric:tabular-nums}
+.taxtoggle{display:flex;align-items:center;gap:10px;margin-top:8px;padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:var(--bg);font-weight:600;cursor:pointer;user-select:none}
+.taxtoggle input{width:22px;height:22px;margin:0;accent-color:var(--ride);flex:none}
+.warn{margin-top:8px;font-size:.85rem;color:#c62828;font-weight:600}
+.sm{font-size:.8rem;color:var(--muted);margin-top:4px}
+</style>
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style>
+</head>
+<body>
+
+<div class="wrap">
+  <h1>Drive or Ride SF</h1>
+  <p class="sub">Own, lease, or use Uber/Lyft/Waymo? Every number below is an editable placeholder, not a quote. Replace them with your own insurance, lease, fuel and ride-app figures. Tap a section to change it.</p>
+
+  <div class="verdict" aria-live="polite">
+    <div class="vhead"><span id="vlabel">Average cost per month</span><span id="hz"></span></div>
+    <label class="taxtoggle" for="aftertax"><input id="aftertax" type="checkbox"><span>Include illustrative tax savings</span></label>
+    <div class="bars" id="bars"></div>
+    <div class="win" id="win"></div>
+  </div>
+
+  <details open>
+    <summary><span>Your travel pattern</span></summary>
+    <div class="body">
+      <p class="note">Count <b>legs</b>: one leg is one drive or one paid ride from A to B. A showing with a ride there and back is 2 legs.</p>
+      <div class="row"><label for="legs">Work legs per week<small>Showings, listings, client meetings</small></label><input id="legs" type="number" inputmode="decimal" step="1"></div>
+      <div class="row"><label for="mi">Miles per leg (one way)</label><input id="mi" type="number" inputmode="decimal" step="0.5"></div>
+      <div class="row"><label for="min">Minutes per leg</label><input id="min" type="number" inputmode="decimal" step="1"></div>
+      <div class="row"><label for="elig">Work legs that are eligible business travel %<small>Exclude commuting between home and a regular office</small></label><input id="elig" type="number" inputmode="decimal"></div>
+      <div class="row"><label for="other">Other car miles per year<small>Personal driving and anything not counted above</small></label><input id="other" type="number" inputmode="decimal"></div>
+      <div class="row"><label for="pers">Personal travel without a car, per month<small>Rides/transit replacing those other miles, for the Rides option</small></label><input id="pers" type="number" inputmode="decimal"></div>
+      <div class="row"><label for="yrs">Compare over how many years</label><input id="yrs" type="number" inputmode="decimal" step="1" min="1"></div>
+      <p class="note" id="milesNote"></p>
+    </div>
+  </details>
+
+  <details>
+    <summary><span><span class="dot" style="background:var(--own)"></span>Own (buy with a loan)</span></summary>
+    <div class="body">
+      <div class="row"><label for="price">Car price</label><input id="price" type="number" inputmode="decimal"></div>
+      <div class="row"><label for="tax">Sales tax %<small>SF: 8.625% (verify for purchase date and place)</small></label><input id="tax" type="number" inputmode="decimal" step="0.001"></div>
+      <div class="row"><label for="down">Down payment</label><input id="down" type="number" inputmode="decimal"></div>
+      <div class="row"><label for="apr">Loan interest rate (APR %)</label><input id="apr" type="number" inputmode="decimal" step="0.1"></div>
+      <div class="row"><label for="term">Loan length (months)</label><input id="term" type="number" inputmode="decimal"></div>
+      <div class="row"><label for="resale">Resale value at end (% of price)<small>Used for cash cost only, not tax depreciation</small></label><input id="resale" type="number" inputmode="decimal"></div>
+      <div class="row"><label for="insO">Insurance per year<small>Placeholder; get a quote that reflects the prior accident</small></label><input id="insO" type="number" inputmode="decimal"></div>
+      <div class="row"><label for="mntO">Maintenance + repairs per year</label><input id="mntO" type="number" inputmode="decimal"></div>
+      <div class="row"><label for="regO">Registration + fees per year</label><input id="regO" type="number" inputmode="decimal"></div>
+      <div class="out"><div><span>Loan payment</span><b id="pmt"></b></div><div><span id="totOlab">Total</span><b id="totO"></b></div><div><span>Per leg</span><b id="ptO"></b></div></div>
+    </div>
+  </details>
+
+  <details>
+    <summary><span><span class="dot" style="background:var(--lease)"></span>Lease</span></summary>
+    <div class="body">
+      <div class="row"><label for="lpay">Monthly lease payment (as quoted)</label><input id="lpay" type="number" inputmode="decimal"></div>
+      <label class="chk" for="lpayTax"><input id="lpayTax" type="checkbox">Quoted monthly payment already includes sales tax</label>
+      <div class="row"><label for="lsign">Due at signing (non-refundable, all-in)<small>Paid again each new lease. Leave out refundable deposits.</small></label><input id="lsign" type="number" inputmode="decimal"></div>
+      <label class="chk" for="lsignFirst"><input id="lsignFirst" type="checkbox">Due at signing includes the first monthly payment</label>
+      <div class="row"><label for="lterm">Lease length (months)</label><input id="lterm" type="number" inputmode="decimal"></div>
+      <div class="row"><label for="ldisp">End-of-lease charges per lease<small>Turn-in fee, expected wear charges</small></label><input id="ldisp" type="number" inputmode="decimal"></div>
+      <div class="row"><label for="lmiles">Miles allowed per year</label><input id="lmiles" type="number" inputmode="decimal"></div>
+      <div class="row"><label for="lover">Cost per extra mile</label><input id="lover" type="number" inputmode="decimal" step="0.01"></div>
+      <div class="row"><label for="insL">Insurance per year<small>Leases require higher coverage limits</small></label><input id="insL" type="number" inputmode="decimal"></div>
+      <div class="row"><label for="mntL">Maintenance per year</label><input id="mntL" type="number" inputmode="decimal"></div>
+      <div class="row"><label for="regL">Registration + fees per year<small>If not already in the payment</small></label><input id="regL" type="number" inputmode="decimal"></div>
+      <div class="out"><div><span>Extra-mile fee/yr</span><b id="ovr"></b></div><div><span>Total</span><b id="totL"></b></div><div><span>Per leg</span><b id="ptL"></b></div></div>
+      <p class="sm" id="leaseNote"></p>
+    </div>
+  </details>
+
+  <details>
+    <summary><span>Costs shared by owning and leasing</span></summary>
+    <div class="body">
+      <div class="row"><label for="fuelType">Car type<small>Applies to both the owned and leased car</small></label><select id="fuelType"><option value="gas">Gas</option><option value="ev">Electric</option></select></div>
+      <div class="row gasRow"><label for="gas">Gas price per gallon<small>Placeholder; check current SF prices</small></label><input id="gas" type="number" inputmode="decimal" step="0.05"></div>
+      <div class="row gasRow"><label for="mpg">Miles per gallon</label><input id="mpg" type="number" inputmode="decimal"></div>
+      <div class="row evRow"><label for="mpk">Miles per kWh<small>Most EVs get 3–4</small></label><input id="mpk" type="number" inputmode="decimal" step="0.1"></div>
+      <div class="row evRow"><label for="homePct">Charging done at home %<small>Use 0 if he has no home charger</small></label><input id="homePct" type="number" inputmode="decimal"></div>
+      <div class="row evRow"><label for="kwhHome">Home electricity per kWh<small>Placeholder; check his PG&amp;E plan (EV plans are cheaper overnight)</small></label><input id="kwhHome" type="number" inputmode="decimal" step="0.01"></div>
+      <div class="row evRow"><label for="kwhPub">Public charging per kWh<small>Placeholder; fast chargers cost more</small></label><input id="kwhPub" type="number" inputmode="decimal" step="0.01"></div>
+      <div class="row evRow"><label for="charger">Home charger install (one time)<small>Counted once in the cash cost</small></label><input id="charger" type="number" inputmode="decimal"></div>
+      <p class="note evRow">For an electric car, also update the car price, lease payment, insurance (often higher for EVs) and maintenance (often lower) in their sections. California charges EVs an extra yearly registration fee. The federal EV tax credit ended for cars bought after September 30, 2025.</p>
+      <p class="sm" id="energyNote"></p>
+      <div class="row"><label for="homePark">Home / regular parking per month</label><input id="homePark" type="number" inputmode="decimal"></div>
+      <div class="row"><label for="bizPark">Business-trip parking + tolls per month<small>Garages and meters at showings, keep receipts</small></label><input id="bizPark" type="number" inputmode="decimal"></div>
+      <div class="row"><label for="persPark">Personal / commuting parking + tolls per month</label><input id="persPark" type="number" inputmode="decimal"></div>
+      <div class="row"><label for="tickets">Traffic + parking tickets per year<small>Never tax-deductible</small></label><input id="tickets" type="number" inputmode="decimal"></div>
+    </div>
+  </details>
+
+  <details>
+    <summary><span><span class="dot" style="background:var(--ride)"></span>Ride services</span></summary>
+    <div class="body">
+      <p class="note"><b>Best: your own quotes.</b> Open each app for a typical route in each time window and enter the all-in fare including fees and any tip. Blank cells fall back to the estimate formula below.</p>
+      <div class="tblwrap"><table>
+        <thead><tr><th>Observed fare</th><th>Uber</th><th>Lyft</th><th>Waymo</th></tr></thead>
+        <tbody id="obs"></tbody>
+      </table></div>
+      <div class="row"><label for="obsNote">Quote notes<small>Date, route and length</small></label><input id="obsNote" type="text" style="text-align:left;font-size:16px"></div>
+      <div class="tblwrap"><table>
+        <thead><tr><th></th><th>Uber</th><th>Lyft</th><th>Waymo</th></tr></thead>
+        <tbody>
+          <tr><td>Share of rides %</td><td><input id="sU" type="number" inputmode="decimal"></td><td><input id="sL" type="number" inputmode="decimal"></td><td><input id="sW" type="number" inputmode="decimal"></td></tr>
+        </tbody>
+      </table></div>
+      <p class="note" style="margin-top:4px"><b>Fallback estimate formula</b> (scenario rates, not current quotes): fare = (pickup fee + per mile + per minute) × time-of-day multiplier, never below the minimum, plus tip.</p>
+      <div class="tblwrap"><table>
+        <thead><tr><th></th><th>Uber</th><th>Lyft</th><th>Waymo</th></tr></thead>
+        <tbody>
+          <tr><td>Pickup + booking fee</td><td><input id="bU" type="number" inputmode="decimal" step="0.05"></td><td><input id="bL" type="number" inputmode="decimal" step="0.05"></td><td><input id="bW" type="number" inputmode="decimal" step="0.05"></td></tr>
+          <tr><td>Per mile</td><td><input id="mU" type="number" inputmode="decimal" step="0.05"></td><td><input id="mL" type="number" inputmode="decimal" step="0.05"></td><td><input id="mW" type="number" inputmode="decimal" step="0.05"></td></tr>
+          <tr><td>Per minute</td><td><input id="nU" type="number" inputmode="decimal" step="0.01"></td><td><input id="nL" type="number" inputmode="decimal" step="0.01"></td><td><input id="nW" type="number" inputmode="decimal" step="0.01"></td></tr>
+          <tr><td>Minimum fare</td><td><input id="fU" type="number" inputmode="decimal"></td><td><input id="fL" type="number" inputmode="decimal"></td><td><input id="fW" type="number" inputmode="decimal"></td></tr>
+          <tr><td>Tip %</td><td><input id="tU" type="number" inputmode="decimal"></td><td><input id="tL" type="number" inputmode="decimal"></td><td><input id="tW" type="number" inputmode="decimal"></td></tr>
+        </tbody>
+      </table></div>
+      <p class="note" style="margin-top:4px"><b>Time of day.</b> Share of your rides in each window, and the fallback formula's price multiplier (1.0 = normal).</p>
+      <div class="tblwrap"><table>
+        <thead><tr><th>Window</th><th>% of rides</th><th>Uber ×</th><th>Lyft ×</th><th>Waymo ×</th></tr></thead>
+        <tbody id="bands"></tbody>
+      </table></div>
+      <div class="row"><label for="rent">Rental car days per month<small>For long drives or client tours</small></label><input id="rent" type="number" inputmode="decimal"></div>
+      <div class="row"><label for="rentc">Rental cost per day (all-in)</label><input id="rentc" type="number" inputmode="decimal"></div>
+      <div class="out"><div><span>Avg fare</span><b id="avgF"></b></div><div><span>Total</span><b id="totR"></b></div><div><span>Per leg</span><b id="ptR"></b></div></div>
+      <div class="tblwrap"><table id="fareTbl"></table></div>
+    </div>
+  </details>
+
+  <details>
+    <summary><span>Taxes (illustrative)</span></summary>
+    <div class="body">
+      <p class="note">Tax results here are scenarios, not a tax return. The before-tax comparison is the main result. To see an after-tax illustration, enter a savings rate from his tax preparer, pick each car's deduction method, then switch on the tax box at the top.</p>
+      <div class="row"><label for="saveRate">Tax saved per $1 of eligible deduction %<small>From his tax preparer. Depends on his income, filing status and other taxes; not calculated here.</small></label><input id="saveRate" type="number" inputmode="decimal" step="0.5"></div>
+      <div class="row"><label for="methO">Owned car deduction method</label><select id="methO"><option value="unknown">Not chosen yet</option><option value="standard">Standard mileage</option><option value="actual">Actual expenses</option></select></div>
+      <div class="row"><label for="deprO">Allowable business depreciation per year (owned)<small>From his tax preparer. Only used with actual expenses.</small></label><input id="deprO" type="number" inputmode="decimal"></div>
+      <div class="row"><label for="methL">Leased car deduction method<small>Must stay the same for the whole lease</small></label><select id="methL"><option value="unknown">Not chosen yet</option><option value="standard">Standard mileage</option><option value="actual">Actual expenses</option></select></div>
+      <div class="row"><label for="rate">IRS mileage rate assumed ($/mile)<small>76¢ for Jul–Dec 2026 (72.5¢ Jan–Jun). Held flat for future years as an assumption.</small></label><input id="rate" type="number" inputmode="decimal" step="0.005"></div>
+      <div class="tblwrap"><table id="taxTbl"></table></div>
+      <div class="explain">
+        <h3>How the tax savings work</h3>
+        <p><b>1. Eligible business travel can be deducted.</b> If he's a self-employed agent, the business part of his travel costs can reduce his taxable business income. This needs eligible business travel and records. Commuting from home to a regular office does not count. If he's an employee, unreimbursed expenses follow different rules and may not be deductible.</p>
+        <p><b>2. A deduction saves only part of a dollar.</b> How much depends on his whole tax picture: income level, filing status, self-employment tax limits and California rules. That's why the savings rate is entered from his tax preparer, not calculated here.</p>
+        <p><b>3. For a car, there are two IRS methods, and the choice has rules.</b></p>
+        <ul>
+          <li><b>Standard mileage:</b> business miles × the IRS rate, plus business-trip parking and tolls, plus the business share of loan interest for an owned car. Gas, insurance, repairs, lease payments and depreciation are covered by the rate and can't be added on top.</li>
+          <li><b>Actual expenses:</b> the business share of gas, insurance, repairs, registration and loan interest (or lease payments), plus business-trip parking and tolls, plus allowable depreciation for an owned car.</li>
+          <li>For an owned car, standard mileage generally must be used in the first year to keep the option of switching later. For a leased car, the method chosen generally applies for the whole lease. He should decide with his tax preparer.</li>
+        </ul>
+        <p><b>4. Rides:</b> the eligible business share of work rides and rentals is a business travel expense. Personal rides are not deductible.</p>
+        <p><b>5. Never deductible:</b> traffic and parking tickets, personal and commuting parking, and home parking unless his preparer says otherwise.</p>
+        <p class="example" id="xEx"></p>
+        <p><b>Electric cars:</b> charging costs count in actual expenses the same way gas does. With standard mileage, the per-mile rate covers charging, so it can't be added on top. Ask his preparer whether a home charger qualifies for any deduction or credit; this calculator doesn't count one.</p>
+        <p><b>Records he'll need:</b> a mileage log (date, miles, client or property) and receipts. Ride apps keep trip history.</p>
+      </div>
+    </div>
+  </details>
+
+  <div class="btns">
+    <button id="reset" type="button">Reset to placeholders</button>
+  </div>
+  <p class="foot">All starting numbers are placeholders to replace with real figures: insurance ($4,800 own / $5,200 lease, assuming a surcharge for a prior accident), gas ($5.40/gal), electricity ($0.35/kWh home, $0.60/kWh public), ride formula rates and time-of-day multipliers, lease terms and resale value. Sales tax: CDTFA lists SF at 8.625%. Mileage rate: IRS 2026 rates. Not tax, legal or financial advice. Entries are saved on this device only.</p>
+</div>
+
+<script>
+const BANDS=["Morning rush (7–10a)","Midday weekday","Evening rush (4–7p)","Nights + weekends"];
+const D={legs:30,mi:6,min:20,elig:100,other:3000,pers:150,yrs:5,
+ price:38000,tax:8.625,down:8000,apr:7.5,term:60,resale:45,insO:4800,mntO:1000,regO:600,
+ lpay:499,lpayTax:1,lsign:3500,lsignFirst:1,lterm:36,ldisp:395,lmiles:12000,lover:0.25,insL:5200,mntL:400,regL:550,
+ fuelType:"gas",gas:5.40,mpg:30,mpk:3.5,homePct:70,kwhHome:0.35,kwhPub:0.60,charger:1500,homePark:250,bizPark:50,persPark:20,tickets:200,
+ sU:40,sL:20,sW:40,bU:5.00,bL:4.80,bW:5.50,mU:1.35,mL:1.30,mW:1.45,nU:0.45,nL:0.42,nW:0.45,fU:11,fL:10.5,fW:11,tU:15,tL:15,tW:0,
+ rent:1,rentc:80,obsNote:"",
+ aftertax:0,saveRate:0,methO:"unknown",methL:"unknown",deprO:0,rate:0.76,
+ bands:[[25,1.4,1.35,1.15],[40,1.0,1.0,1.0],[20,1.5,1.45,1.2],[15,1.25,1.2,1.1]],
+ obs:[[null,null,null],[null,null,null],[null,null,null],[null,null,null]]};
+const KEY="driveOrRideSF.v2";
+const CHECK=["aftertax","lpayTax","lsignFirst"], SEL=["methO","methL","fuelType"], TEXT=["obsNote"];
+const ids=Object.keys(D).filter(k=>k!=="bands"&&k!=="obs");
+const NUM=ids.filter(k=>!CHECK.includes(k)&&!SEL.includes(k)&&!TEXT.includes(k));
+const POS=["yrs","term","lterm","mpg","mpk"];
+const PCT=["homePct","elig","tax","apr","resale","saveRate","sU","sL","sW","tU","tL","tW"];
+const clone=o=>JSON.parse(JSON.stringify(o));
+const $=id=>document.getElementById(id);
+const money=v=>"$"+Math.round(v).toLocaleString();
+const money2=v=>"$"+v.toFixed(2);
+
+function validate(s){
+  const e={};
+  const skip=s.fuelType==="ev"?["gas","mpg"]:["mpk","homePct","kwhHome","kwhPub","charger"];
+  NUM.forEach(k=>{if(skip.includes(k))return;const v=s[k];
+    if(typeof v!=="number"||!isFinite(v)) e[k]="Enter a number.";
+    else if(POS.includes(k)&&v<=0) e[k]="Must be more than 0.";
+    else if(v<0) e[k]="Can't be negative.";
+    else if(PCT.includes(k)&&v>100) e[k]="Must be 0–100%.";});
+  if(!e.down&&!e.price&&!e.tax&&s.down>s.price*(1+s.tax/100)) e.down="Can't exceed price plus tax.";
+  if(!e.sU&&!e.sL&&!e.sW&&s.sU+s.sL+s.sW<=0) e.sW="Ride shares must add up to more than 0.";
+  if(!Array.isArray(s.bands)||s.bands.length!==4) e._bands="Time-of-day table is damaged.";
+  else{ s.bands.forEach((b,i)=>b.forEach((v,j)=>{if(typeof v!=="number"||!isFinite(v)||v<0||(j===0&&v>100)) e[`b${i}_${j}`]=j===0?"0–100%":"0 or more";}));
+    if(!Object.keys(e).some(k=>k.startsWith("b"))&&s.bands.reduce((a,b)=>a+b[0],0)<=0) e.b3_0="Shares must add up to more than 0."; }
+  if(!Array.isArray(s.obs)||s.obs.length!==4) e._obs="Quote table is damaged.";
+  else s.obs.forEach((r,i)=>r.forEach((v,j)=>{if(v!==null&&(typeof v!=="number"||!isFinite(v)||v<0)) e[`o${i}_${j}`]="0 or more, or blank";}));
+  if(!["methO","methL"].every(k=>["unknown","standard","actual"].includes(s[k]))) e.methO="Pick a method.";
+  if(!["gas","ev"].includes(s.fuelType)) e.fuelType="Pick a car type.";
+  return e;
+}
+
+let S;
+try{const saved=JSON.parse(localStorage.getItem(KEY));if(saved&&typeof saved==="object"){S=Object.assign(clone(D),saved);if(Object.keys(validate(S)).length)S=null;}}catch(e){S=null}
+if(!S)S=clone(D);
+let lastGood=null;
+
+function buildTables(){
+  $("bands").innerHTML=S.bands.map((b,i)=>`<tr><td>${BANDS[i]}</td>${b.map((v,j)=>`<td><input id="b${i}_${j}" type="number" inputmode="decimal" step="${j==0?1:0.05}" value="${v}"></td>`).join("")}</tr>`).join("");
+  $("obs").innerHTML=S.obs.map((r,i)=>`<tr><td>${BANDS[i]}</td>${r.map((v,j)=>`<td><input id="o${i}_${j}" type="number" inputmode="decimal" step="0.25" placeholder="—" value="${v===null?"":v}"></td>`).join("")}</tr>`).join("");
+}
+function fill(){ids.forEach(k=>{if(CHECK.includes(k))$(k).checked=!!S[k];else $(k).value=S[k]});buildTables();}
+function num(el){const t=el.value.trim();return t===""?NaN:Number(t)}
+function read(){
+  const n=clone(S);
+  ids.forEach(k=>{if(CHECK.includes(k))n[k]=$(k).checked?1:0;else if(SEL.includes(k)||TEXT.includes(k))n[k]=$(k).value;else n[k]=num($(k))});
+  n.bands=S.bands.map((b,i)=>b.map((_,j)=>num($(`b${i}_${j}`))));
+  n.obs=S.obs.map((r,i)=>r.map((_,j)=>{const v=$(`o${i}_${j}`).value.trim();return v===""?null:Number(v)}));
+  return n;
+}
+function showErrors(e){
+  document.querySelectorAll(".err").forEach(x=>x.remove());
+  document.querySelectorAll("input.bad").forEach(x=>x.classList.remove("bad"));
+  Object.entries(e).forEach(([k,msg])=>{const el=$(k);if(!el)return;el.classList.add("bad");
+    const row=el.closest(".row");
+    if(row){const d=document.createElement("div");d.className="err";d.textContent=msg;row.appendChild(d);}
+    else el.title=msg;});
+}
+
+function calc(s){
+  const months=s.yrs*12, legsYr=s.legs*52, legMiles=legsYr*s.mi, milesYr=legMiles+s.other, legs=legsYr*s.yrs;
+  const bizMiles=legMiles*s.elig/100, bizShare=milesYr>0?bizMiles/milesYr:0;
+  const ev=s.fuelType==="ev";
+  const kwhPrice=s.homePct/100*s.kwhHome+(1-s.homePct/100)*s.kwhPub;
+  const fuelYr=ev?milesYr/s.mpk*kwhPrice:milesYr/s.mpg*s.gas;
+  const charger=ev?s.charger:0;
+  const parkCashYr=(s.homePark+s.bizPark+s.persPark)*12+s.tickets, sharedYr=fuelYr+parkCashYr;
+  // Own (cash)
+  const loan=Math.max(0,s.price*(1+s.tax/100)-s.down), r=s.apr/1200, n=s.term;
+  const pmt=r>0?loan*r/(1-Math.pow(1+r,-n)):loan/n;
+  const paid=Math.min(n,months);
+  const balance=Math.max(0,r>0?loan*Math.pow(1+r,paid)-pmt*(Math.pow(1+r,paid)-1)/r:loan-pmt*paid);
+  const interestTot=Math.max(0,pmt*paid+balance-loan);
+  const ownTotal=charger+s.down+pmt*paid+balance-s.price*s.resale/100+(s.insO+s.mntO+s.regO+sharedYr)*s.yrs;
+  // Lease (cash)
+  const leases=Math.ceil(months/s.lterm);
+  const payCount=Math.max(0,months-(s.lsignFirst?leases:0));
+  const leaseTaxTot=s.lpayTax?0:s.lpay*months*s.tax/100;
+  const overYr=Math.max(0,milesYr-s.lmiles)*s.lover;
+  const leaseCore=s.lsign*leases+s.lpay*payCount+leaseTaxTot;
+  const leaseTotal=charger+leaseCore+s.ldisp*leases+(overYr+s.insL+s.mntL+s.regL+sharedYr)*s.yrs;
+  // Rides (cash)
+  const svc=[["Uber","U"],["Lyft","L"],["Waymo","W"]];
+  const shareSum=s.sU+s.sL+s.sW, bandSum=s.bands.reduce((a,b)=>a+b[0],0);
+  let avg=0, usedObs=0, cells=0; const per={};
+  svc.forEach(([name,k],j)=>{
+    const raw=s["b"+k]+s["m"+k]*s.mi+s["n"+k]*s.min;
+    let f=0; s.bands.forEach((b,i)=>{cells++;const o=s.obs[i][j];
+      const fare=o!==null?(usedObs++,o):Math.max(s["f"+k],raw*b[j+1])*(1+s["t"+k]/100);
+      f+=b[0]/bandSum*fare;});
+    per[name]=f; avg+=f*s["s"+k]/shareSum;
+  });
+  const workRideYr=avg*legsYr+s.rent*s.rentc*12;
+  const rideTotal=(workRideYr+s.pers*12)*s.yrs;
+  // Tax scenario (annual deductions)
+  const intYr=interestTot/s.yrs;
+  const own={std:bizMiles*s.rate+bizShare*intYr+s.bizPark*12,
+             act:bizShare*(s.insO+s.mntO+s.regO+fuelYr+intYr)+s.deprO+s.bizPark*12};
+  const lease={std:bizMiles*s.rate+s.bizPark*12,
+             act:bizShare*(leaseCore/s.yrs+overYr+s.insL+s.mntL+s.regL+fuelYr)+s.bizPark*12};
+  const pick=(o,m)=>m==="standard"?o.std:m==="actual"?o.act:null;
+  own.ded=pick(own,s.methO); lease.ded=pick(lease,s.methL);
+  const ride={ded:s.elig/100*workRideYr};
+  const rate=s.saveRate/100;
+  [own,lease,ride].forEach(o=>o.save=o.ded===null?null:o.ded*rate*s.yrs);
+  return {ev,fuelYr,kwhPrice,months,legsYr,legMiles,milesYr,bizMiles,bizShare,legs,pmt,ownTotal,leaseTotal,rideTotal,overYr,avg,per,
+    usedObs,cells,leases,payCount,leaseTaxTot,tax:{own,lease,ride,rate}};
+}
+
+function render(){
+  const s=read(), e=validate(s);
+  document.querySelectorAll(".gasRow").forEach(x=>x.hidden=s.fuelType==="ev");
+  document.querySelectorAll(".evRow").forEach(x=>x.hidden=s.fuelType!=="ev");
+  showErrors(e);
+  if(Object.keys(e).length){
+    $("win").innerHTML=`<div class="warn">Fix the highlighted fields to update the results.</div>`+(lastGood?`<div class="sm">Showing the last valid result.</div>`:"");
+    return;
+  }
+  S=s; try{localStorage.setItem(KEY,JSON.stringify(S))}catch(err){}
+  const c=calc(s), yrs=s.yrs, T=c.tax;
+  lastGood=c;
+  $("hz").textContent=`over ${yrs} yr${yrs==1?"":"s"}`;
+  $("milesNote").textContent=`${c.legsYr.toLocaleString()} work legs and ${Math.round(c.legMiles).toLocaleString()} work miles a year, plus ${Math.round(s.other).toLocaleString()} other miles = ${Math.round(c.milesYr).toLocaleString()} total car miles. Eligible business miles: ${Math.round(c.bizMiles).toLocaleString()} (${Math.round(c.bizShare*100)}% of all car miles).`;
+  const pre=[["Own",c.ownTotal,"var(--own)"],["Lease",c.leaseTotal,"var(--lease)"],["Rides",c.rideTotal,"var(--ride)"]];
+  const preBest=pre.reduce((a,b)=>b[1]<a[1]?b:a);
+  const at=!!s.aftertax;
+  const missing=[]; if(s.saveRate<=0)missing.push("a tax savings rate"); if(s.methO==="unknown")missing.push("the owned car's method"); if(s.methL==="unknown")missing.push("the leased car's method");
+  const wantAt=at; const atOn=at&&!missing.length;
+  const sv=[T.own.save,T.lease.save,T.ride.save];
+  const opts=pre.map((o,i)=>[o[0],atOn?o[1]-sv[i]:o[1],o[2]]);
+  const max=Math.max(...opts.map(o=>o[1]),1), best=opts.reduce((a,b)=>b[1]<a[1]?b:a);
+  $("vlabel").textContent=atOn?"Monthly cost, illustrative after-tax estimate":"Average cost per month, before taxes";
+  $("bars").innerHTML=opts.map(o=>`<div class="bar ${o===best?"best":""}"><span class="lab">${o[0]}</span><div class="track"><div class="fill" style="width:${Math.max(2,o[1]/max*100)}%;background:${o[2]}"></div></div><span class="val">${money(o[1]/c.months)}/mo</span></div>`).join("");
+  const sorted=[...opts].sort((a,b)=>a[1]-b[1]);
+  let w;
+  if(!atOn) w=`<b>${best[0]}</b> has the lowest estimated cost before taxes, ${money((sorted[1][1]-best[1])/c.months)}/mo less than ${sorted[1][0].toLowerCase()} (${money(sorted[1][1]-best[1])} over ${yrs} yrs).`;
+  else{
+    w=`Lowest illustrative after-tax estimate: <b>${best[0]}</b>. Before taxes, the lowest is <b>${preBest[0]}</b> at ${money(preBest[1]/c.months)}/mo.`;
+  }
+  if(wantAt&&missing.length) w+=`<div class="warn">Tax savings not shown. Still needed: ${missing.join(", ")}. Set these in Taxes.</div>`;
+  $("win").innerHTML=w;
+  const perLeg=v=>c.legs>0?money2(v/c.legs):"N/A";
+  $("energyNote").textContent=c.ev?`Electricity: about ${money(c.fuelYr/12)}/mo (${money2(c.kwhPrice)} per kWh blended, ${(c.kwhPrice/s.mpk*100).toFixed(1)}¢ per mile).`:`Gas: about ${money(c.fuelYr/12)}/mo (${(s.gas/s.mpg*100).toFixed(1)}¢ per mile).`;
+  $("pmt").textContent=money(c.pmt)+"/mo";
+  $("totOlab").textContent=`${yrs}-yr total`;
+  $("totO").textContent=money(c.ownTotal); $("ptO").textContent=perLeg(c.ownTotal);
+  $("ovr").textContent=money(c.overYr); $("totL").textContent=money(c.leaseTotal); $("ptL").textContent=perLeg(c.leaseTotal);
+  $("leaseNote").textContent=`${c.leases} lease${c.leases>1?"s":""} over ${yrs} yrs: ${c.payCount} monthly payments after signing${s.lpayTax?"":`, plus ${money(c.leaseTaxTot)} sales tax on payments`}. If a lease runs past the comparison period, its end-of-lease charge is still counted.`;
+  $("avgF").textContent=money2(c.avg); $("totR").textContent=money(c.rideTotal); $("ptR").textContent=perLeg(c.rideTotal);
+  $("fareTbl").innerHTML=`<thead><tr><th>Avg fare for your typical leg</th><th>Uber</th><th>Lyft</th><th>Waymo</th></tr></thead><tbody><tr><td>${c.usedObs===c.cells?"From your quotes":c.usedObs?"Your quotes + formula":"Formula estimate"}</td>${["Uber","Lyft","Waymo"].map(n=>`<td>${money2(c.per[n])}</td>`).join("")}</tr></tbody>`;
+  // Tax table
+  const d=v=>v===null?"—":money(v);
+  $("taxTbl").innerHTML=`<thead><tr><th>Deduction per year</th><th>Own</th><th>Lease</th><th>Rides</th></tr></thead><tbody>`+
+    `<tr><td>Standard mileage</td><td>${money(T.own.std)}</td><td>${money(T.lease.std)}</td><td>—</td></tr>`+
+    `<tr><td>Actual expenses</td><td>${money(T.own.act)}</td><td>${money(T.lease.act)}</td><td>—</td></tr>`+
+    `<tr><td>Business rides</td><td>—</td><td>—</td><td>${money(T.ride.ded)}</td></tr>`+
+    `<tr><td><b>Used (your choice)</b></td><td>${d(T.own.ded)}</td><td>${d(T.lease.ded)}</td><td>${money(T.ride.ded)}</td></tr>`+
+    `<tr><td>Illustrative tax saved / mo</td>${[T.own,T.lease,T.ride].map(o=>`<td>${o.save===null?"—":money(o.save/c.months)}</td>`).join("")}</tr></tbody>`;
+  $("xEx").innerHTML=`<b>His numbers:</b> ${Math.round(c.bizMiles).toLocaleString()} eligible business miles a year. `+
+    (T.own.ded===null?`Pick the owned car's method above to see its deduction used. `:`With ${s.methO==="standard"?"standard mileage":"actual expenses"}, the owned-car deduction is about ${money(T.own.ded)} a year. `)+
+    (s.saveRate>0&&T.own.ded!==null?`At the ${s.saveRate}% savings rate entered, that would save about ${money(T.own.ded*T.rate)} a year (${money(T.own.ded*T.rate/12)} a month). This is an illustration, not a tax estimate.`:`Enter a savings rate from his tax preparer to see an illustrative dollar amount.`)+
+    (s.methO==="actual"&&s.deprO===0?` Depreciation is set to $0 until his preparer supplies the allowable amount.`:"");
+}
+document.addEventListener("input",ev=>{if(ev.target.matches("input,select"))render()});
+document.addEventListener("change",ev=>{if(ev.target.matches("select,input[type=checkbox]"))render()});
+$("reset").addEventListener("click",()=>{S=clone(D);fill();render()});
+fill();render();
+</script>
+
+</body>
+</html>
